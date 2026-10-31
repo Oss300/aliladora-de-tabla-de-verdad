@@ -1,1 +1,3 @@
-# aliladora-de-tabla-de-verdad
+streamlit>=1.40
+pandas>=2.1
+ 
