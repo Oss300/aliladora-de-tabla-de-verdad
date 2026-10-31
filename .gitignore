@@ -1,220 +1,356 @@
-# Byte-compiled / optimized / DLL files
-__pycache__/
-*.py[codz]
-*$py.class
-
-# C extensions
-*.so
-
-# Distribution / packaging
-.Python
-build/
-develop-eggs/
-dist/
-downloads/
-eggs/
-.eggs/
-lib/
-lib64/
-parts/
-sdist/
-var/
-wheels/
-share/python-wheels/
-*.egg-info/
-.installed.cfg
-*.egg
-MANIFEST
-
-# PyInstaller
-#   Usually these files are written by a python script from a template
-#   before PyInstaller builds the exe, so as to inject date/other infos into it.
-*.manifest
-*.spec
-
-# Installer logs
-pip-log.txt
-pip-delete-this-directory.txt
-
-# Unit test / coverage reports
-htmlcov/
-.tox/
-.nox/
-.coverage
-.coverage.*
-.cache
-nosetests.xml
-coverage.xml
-*.cover
-*.py.cover
-*.lcov
-.hypothesis/
-.pytest_cache/
-cover/
-
-# Translations
-*.mo
-*.pot
-
-# Django stuff:
-*.log
-local_settings.py
-db.sqlite3
-db.sqlite3-journal
-
-# Flask stuff:
-instance/
-.webassets-cache
-
-# Scrapy stuff:
-.scrapy
-
-# Sphinx documentation
-docs/_build/
-
-# PyBuilder
-.pybuilder/
-target/
-
-# Jupyter Notebook
-.ipynb_checkpoints
-
-# IPython
-profile_default/
-ipython_config.py
-
-# pyenv
-#   For a library or package, you might want to ignore these files since the code is
-#   intended to run in multiple environments; otherwise, check them in:
-# .python-version
-
-# pipenv
-#   According to pypa/pipenv#598, it is recommended to include Pipfile.lock in version control.
-#   However, in case of collaboration, if having platform-specific dependencies or dependencies
-#   having no cross-platform support, pipenv may install dependencies that don't work, or not
-#   install all needed dependencies.
-# Pipfile.lock
-
-# uv
-#   Similar to Pipfile.lock, it is generally recommended to include uv.lock in version control.
-#   This is especially recommended for binary packages to ensure reproducibility, and is more
-#   commonly ignored for libraries.
-# uv.lock
-
-# poetry
-#   Similar to Pipfile.lock, it is generally recommended to include poetry.lock in version control.
-#   This is especially recommended for binary packages to ensure reproducibility, and is more
-#   commonly ignored for libraries.
-#   https://python-poetry.org/docs/basic-usage/#commit-your-poetrylock-file-to-version-control
-# poetry.lock
-# poetry.toml
-
-# pdm
-#   Similar to Pipfile.lock, it is generally recommended to include pdm.lock in version control.
-#   pdm recommends including project-wide configuration in pdm.toml, but excluding .pdm-python.
-#   https://pdm-project.org/en/latest/usage/project/#working-with-version-control
-# pdm.lock
-# pdm.toml
-.pdm-python
-.pdm-build/
-
-# pixi
-#   Similar to Pipfile.lock, it is generally recommended to include pixi.lock in version control.
-# pixi.lock
-#   Pixi creates a virtual environment in the .pixi directory, just like venv module creates one
-#   in the .venv directory. It is recommended not to include this directory in version control.
-.pixi/*
-!.pixi/config.toml
-
-# PEP 582; used by e.g. github.com/David-OConnor/pyflow and github.com/pdm-project/pdm
-__pypackages__/
-
-# Celery stuff
-celerybeat-schedule*
-celerybeat.pid
-
-# Redis
-*.rdb
-*.aof
-*.pid
-
-# RabbitMQ
-mnesia/
-rabbitmq/
-rabbitmq-data/
-
-# ActiveMQ
-activemq-data/
-
-# SageMath parsed files
-*.sage.py
-
-# Environments
-.env
-.envrc
-.venv
-env/
-venv/
-ENV/
-env.bak/
-venv.bak/
-
-# Spyder project settings
-.spyderproject
-.spyproject
-
-# Rope project settings
-.ropeproject
-
-# mkdocs/Zensical documentation
-/site
-
-# mypy
-.mypy_cache/
-.dmypy.json
-dmypy.json
-
-# Pyre type checker
-.pyre/
-
-# pytype static type analyzer
-.pytype/
-
-# Cython debug symbols
-cython_debug/
-
-# PyCharm
-#   JetBrains specific template is maintained in a separate JetBrains.gitignore that can
-#   be found at https://github.com/github/gitignore/blob/main/Global/JetBrains.gitignore
-#   and can be added to the global gitignore or merged into this file.  For a more nuclear
-#   option (not recommended) you can uncomment the following to ignore the entire idea folder.
-# .idea/
-
-# Abstra
-#   Abstra is an AI-powered process automation framework.
-#   Ignore directories containing user credentials, local state, and settings.
-#   Learn more at https://abstra.io/docs
-.abstra/
-
-# Visual Studio Code
-#   Visual Studio Code specific template is maintained in a separate VisualStudioCode.gitignore that
-#   can be found at https://github.com/github/gitignore/blob/main/Global/VisualStudioCode.gitignore
-#   and can be added to the global gitignore or merged into this file. However, if you prefer, you
-#   could uncomment the following to ignore the entire vscode folder
-# .vscode/
-# Temporary file for partial code execution
-tempCodeRunnerFile.py
-
-# Ruff stuff:
-.ruff_cache/
-
-# PyPI configuration file
-.pypirc
-
-# Marimo
-marimo/_static/
-marimo/_lsp/
-__marimo__/
-
-# Streamlit
-.streamlit/secrets.toml
+import itertools
+import re
+ 
+import pandas as pd
+import streamlit as st
+ 
+# ============================================================
+# MOTOR LÓGICO (parser propio, sin eval)
+# Precedencia: ¬ > ∧ > ∨ > ⊕ > → > ↔
+# ============================================================
+import itertools
+import re
+ 
+TOKENS = [
+    ("IFF", r"<->|<=>|↔"),
+    ("IMP", r"->|=>|→"),
+    ("XOR", r"⊕|\bXOR\b"),
+    ("AND", r"∧|&&|&|\bAND\b"),
+    ("OR", r"∨|\|\||\||\bOR\b"),
+    ("NOT", r"¬|~|!|\bNOT\b"),
+    ("LP", r"\("),
+    ("RP", r"\)"),
+    ("CONST", r"\b[01]\b"),
+    ("VAR", r"[A-Za-z_][A-Za-z0-9_]*"),
+    ("WS", r"\s+"),
+]
+REGEX = re.compile("|".join(f"(?P<{n}>{p})" for n, p in TOKENS), re.IGNORECASE)
+ 
+SIMBOLO = {"and": "∧", "or": "∨", "xor": "⊕", "imp": "→", "iff": "↔"}
+TIPO = {"AND": "and", "OR": "or", "XOR": "xor", "IMP": "imp", "IFF": "iff"}
+ 
+ 
+class ErrorSintaxis(Exception):
+    pass
+ 
+ 
+def tokenizar(texto):
+    pos, out = 0, []
+    while pos < len(texto):
+        m = REGEX.match(texto, pos)
+        if not m:
+            raise ErrorSintaxis(f"Carácter no reconocido: '{texto[pos]}' (posición {pos + 1})")
+        pos = m.end()
+        if m.lastgroup != "WS":
+            out.append((m.lastgroup, m.group()))
+    return out
+ 
+ 
+class Parser:
+    """Precedencia (mayor a menor): ¬  >  ∧  >  ∨  >  ⊕  >  →  >  ↔"""
+ 
+    def __init__(self, tokens):
+        self.t, self.i = tokens, 0
+ 
+    def _ver(self):
+        return self.t[self.i][0] if self.i < len(self.t) else None
+ 
+    def _tomar(self):
+        tok = self.t[self.i]
+        self.i += 1
+        return tok
+ 
+    def parsear(self):
+        if not self.t:
+            raise ErrorSintaxis("La expresión está vacía.")
+        nodo = self._iff()
+        if self.i < len(self.t):
+            raise ErrorSintaxis(f"Símbolo inesperado: '{self.t[self.i][1]}'")
+        return nodo
+ 
+    def _iff(self):
+        izq = self._imp()
+        while self._ver() == "IFF":
+            self._tomar()
+            izq = ("iff", izq, self._imp())
+        return izq
+ 
+    def _imp(self):  # asociativa a la derecha
+        izq = self._xor()
+        if self._ver() == "IMP":
+            self._tomar()
+            return ("imp", izq, self._imp())
+        return izq
+ 
+    def _xor(self):
+        izq = self._or()
+        while self._ver() == "XOR":
+            self._tomar()
+            izq = ("xor", izq, self._or())
+        return izq
+ 
+    def _or(self):
+        izq = self._and()
+        while self._ver() == "OR":
+            self._tomar()
+            izq = ("or", izq, self._and())
+        return izq
+ 
+    def _and(self):
+        izq = self._not()
+        while self._ver() == "AND":
+            self._tomar()
+            izq = ("and", izq, self._not())
+        return izq
+ 
+    def _not(self):
+        if self._ver() == "NOT":
+            self._tomar()
+            return ("not", self._not())
+        return self._atomo()
+ 
+    def _atomo(self):
+        v = self._ver()
+        if v == "VAR":
+            return ("var", self._tomar()[1])
+        if v == "CONST":
+            return ("const", self._tomar()[1] == "1")
+        if v == "LP":
+            self._tomar()
+            nodo = self._iff()
+            if self._ver() != "RP":
+                raise ErrorSintaxis("Falta cerrar un paréntesis ')'.")
+            self._tomar()
+            return nodo
+        if v is None:
+            raise ErrorSintaxis("La expresión termina de forma inesperada.")
+        raise ErrorSintaxis(f"Símbolo inesperado: '{self.t[self.i][1]}'")
+ 
+ 
+def parsear(texto):
+    return Parser(tokenizar(texto)).parsear()
+ 
+ 
+def variables(nodo, acc=None):
+    """Variables en orden de aparición."""
+    acc = [] if acc is None else acc
+    if nodo[0] == "var":
+        if nodo[1] not in acc:
+            acc.append(nodo[1])
+    elif nodo[0] != "const":
+        for hijo in nodo[1:]:
+            variables(hijo, acc)
+    return acc
+ 
+ 
+def evaluar(nodo, env):
+    k = nodo[0]
+    if k == "var":
+        return env[nodo[1]]
+    if k == "const":
+        return nodo[1]
+    if k == "not":
+        return not evaluar(nodo[1], env)
+    a, b = evaluar(nodo[1], env), evaluar(nodo[2], env)
+    return {
+        "and": a and b,
+        "or": a or b,
+        "xor": a != b,
+        "imp": (not a) or b,
+        "iff": a == b,
+    }[k]
+ 
+ 
+def a_texto(nodo, raiz=True):
+    k = nodo[0]
+    if k == "var":
+        return nodo[1]
+    if k == "const":
+        return "1" if nodo[1] else "0"
+    if k == "not":
+        return "¬" + a_texto(nodo[1], False)
+    s = f"{a_texto(nodo[1], False)} {SIMBOLO[k]} {a_texto(nodo[2], False)}"
+    return s if raiz else f"({s})"
+ 
+ 
+def subexpresiones(nodo, acc=None):
+    """Subexpresiones no triviales, de adentro hacia afuera, sin repetir."""
+    acc = [] if acc is None else acc
+    if nodo[0] in ("var", "const"):
+        return acc
+    for hijo in nodo[1:]:
+        subexpresiones(hijo, acc)
+    if nodo not in acc:
+        acc.append(nodo)
+    return acc
+ 
+ 
+def tabla_de_verdad(texto, max_vars=6, paso_a_paso=True):
+    """Devuelve (filas, columnas, clasificación). Cada fila es lista de bools."""
+    arbol = parsear(texto)
+    vs = variables(arbol)
+    if len(vs) > max_vars:
+        raise ErrorSintaxis(f"Máximo {max_vars} variables (tienes {len(vs)}).")
+    subs = subexpresiones(arbol) if paso_a_paso else [arbol]
+    if arbol not in subs:  # expresión que es solo una variable o constante
+        subs.append(arbol)
+    columnas = vs + [a_texto(s) for s in subs]
+    filas = []
+    for valores in itertools.product([True, False], repeat=len(vs)):
+        env = dict(zip(vs, valores))
+        filas.append(list(valores) + [evaluar(s, env) for s in subs])
+    resultado = [f[-1] for f in filas]
+    if all(resultado):
+        clase = "tautología"
+    elif not any(resultado):
+        clase = "contradicción"
+    else:
+        clase = "contingencia"
+    return filas, columnas, clase
+ 
+ 
+# ============================================================
+# CONFIGURACIÓN
+# ============================================================
+st.set_page_config(page_title="Calculadora Tabla de la Verdad", page_icon="🧮", layout="centered")
+ 
+st.title("🧮 Calculadora de Tabla de la Verdad")
+st.markdown("Construye tu expresión haciendo clic. El resultado se muestra en **0 y 1**.")
+ 
+# ============================================================
+# ESTADO DE LA SESIÓN
+# ============================================================
+if "expr" not in st.session_state:
+    st.session_state.expr = ""
+ 
+ 
+def agregar(texto):
+    st.session_state.expr += texto
+ 
+ 
+def limpiar():
+    st.session_state.expr = ""
+ 
+ 
+def borrar_ultimo():
+    st.session_state.expr = st.session_state.expr.rstrip()[:-1]
+ 
+ 
+def cargar(texto):
+    st.session_state.expr = texto
+ 
+ 
+# ============================================================
+# CONSTRUCTOR DE EXPRESIÓN
+# ============================================================
+st.subheader("🛠️ Constructor de Expresión")
+ 
+st.markdown("**Variables:**")
+cols = st.columns(6)
+for i, v in enumerate(["p", "q", "r", "s", "t", "u"]):
+    cols[i].button(v, key=f"btn_{v}", use_container_width=True, on_click=agregar, args=(f" {v} ",))
+ 
+st.markdown("**Operadores:**")
+cols = st.columns(6)
+for i, (simbolo, nombre) in enumerate(
+    [("∧", "AND"), ("∨", "OR"), ("¬", "NOT"), ("⊕", "XOR"), ("→", "IMPLIES"), ("↔", "IFF")]
+):
+    cols[i].button(simbolo, key=f"btn_{nombre}", use_container_width=True, help=nombre,
+                   on_click=agregar, args=(f" {simbolo} ",))
+ 
+c1, c2, c3, c4 = st.columns(4)
+c1.button("(", use_container_width=True, on_click=agregar, args=("(",))
+c2.button(")", use_container_width=True, on_click=agregar, args=(")",))
+c3.button("🗑️ Limpiar Todo", use_container_width=True, on_click=limpiar)
+c4.button("⌫ Borrar Último", use_container_width=True, on_click=borrar_ultimo)
+ 
+st.markdown("---")
+st.markdown("**Expresión actual:**")
+st.code(st.session_state.expr.strip() or "(vacío)", language="text")
+ 
+# ============================================================
+# EJEMPLOS
+# ============================================================
+st.markdown("**Ejemplos rápidos:**")
+ejemplos = {
+    "p ∧ q": "Conjunción simple",
+    "p ∨ q": "Disyunción simple",
+    "p ⊕ q": "XOR",
+    "p → q": "Condicional",
+    "p ↔ q": "Bicondicional",
+    "¬p": "Negación",
+    "(p → q) ↔ (¬q → ¬p)": "Ley contrarrecíproca",
+    "p ∨ ¬p": "Tautología",
+    "p ∧ ¬p": "Contradicción",
+}
+cols = st.columns(3)
+for i, (expr, desc) in enumerate(ejemplos.items()):
+    cols[i % 3].button(expr, key=f"ejemplo_{i}", help=desc, use_container_width=True,
+                       on_click=cargar, args=(expr,))
+ 
+mostrar_pasos = st.checkbox("Mostrar subexpresiones paso a paso", value=False)
+st.markdown("---")
+ 
+# ============================================================
+# GENERAR TABLA
+# ============================================================
+if st.button("🚀 Generar Tabla", type="primary", use_container_width=True):
+    if not st.session_state.expr.strip():
+        st.warning("⚠️ Ingresa o construye una expresión primero.")
+    else:
+        try:
+            filas, columnas, clase = tabla_de_verdad(st.session_state.expr, paso_a_paso=mostrar_pasos)
+        except ErrorSintaxis as e:
+            st.error(f"❌ {e}")
+            st.info("Revisa operadores faltantes, paréntesis balanceados y que cada operador tenga sus dos operandos.")
+        else:
+            df = pd.DataFrame([[int(x) for x in fila] for fila in filas], columns=columnas)
+            resultados = df.iloc[:, -1].tolist()
+ 
+            n_vars = len(variables(parsear(st.session_state.expr)))
+            st.success(f"✅ Tabla generada para {n_vars} variable(s) - {len(filas)} filas")
+ 
+            if clase == "tautología":
+                st.info("📊 **Tipo: TAUTOLOGÍA** (siempre verdadera)")
+            elif clase == "contradicción":
+                st.error("📊 **Tipo: CONTRADICCIÓN** (siempre falsa)")
+            else:
+                st.info("📊 **Tipo: CONTINGENCIA** (depende de los valores)")
+ 
+            st.dataframe(df, use_container_width=True, hide_index=True)
+ 
+            m1, m2, m3 = st.columns(3)
+            m1.metric("Total de filas", len(filas))
+            m2.metric("Verdaderos (1)", sum(resultados))
+            m3.metric("Falsos (0)", len(filas) - sum(resultados))
+ 
+            st.download_button("📥 Descargar CSV", df.to_csv(index=False).encode("utf-8"),
+                               "tabla_verdad.csv", "text/csv", use_container_width=True)
+ 
+# ============================================================
+# GUÍA
+# ============================================================
+with st.expander("📚 Guía de Operadores"):
+    st.markdown("""
+| Símbolo | Nombre | Significado |
+|:-------:|:-------|:------------|
+| **∧** | Conjunción | AND - Verdadero si AMBOS son verdaderos |
+| **∨** | Disyunción | OR - Verdadero si al menos UNO es verdadero |
+| **¬** | Negación | NOT - Invierte el valor |
+| **⊕** | XOR | Verdadero si son DIFERENTES |
+| **→** | Condicional | Falso solo si p=1 y q=0 |
+| **↔** | Bicondicional | Verdadero si ambos son IGUALES |
+ 
+**Precedencia (mayor a menor):** ¬, ∧, ∨, ⊕, →, ↔. Usa paréntesis para cambiar el orden.
+ 
+**También puedes escribir:** `~` `&` `|` `->` `<->` `XOR` directamente en las expresiones.
+""")
+ 
+st.markdown("---")
+st.markdown("""
+<div style='text-align: center; color: gray; font-size: 0.9em;'>
+<p>🎓 <strong>Estructuras Discretas</strong> - Ingeniería en Software</p>
+<p>💻 Desarrollado con Python y Streamlit</p>
+</div>
+""", unsafe_allow_html=True)
+ 
